@@ -7,11 +7,28 @@ import { Card, CardHeader, CardTitle } from './components/ui/Card';
 import { Button } from './components/ui/Button';
 import { TimeDistributionChart } from './components/TimeDistributionChart';
 import { ClockIcon, PieChartIcon, LightbulbIcon, PlusIcon, TrashIcon } from './components/icons';
+import { PomodoroTimer } from './components/PomodoroTimer';
 
-const Header: React.FC = () => (
+type ActiveTab = 'tracker' | 'pomodoro';
+
+const Header: React.FC<{ activeTab: ActiveTab, onTabChange: (tab: ActiveTab) => void }> = ({ activeTab, onTabChange }) => (
     <header className="py-4 px-8 text-center">
         <h1 className="text-3xl font-bold text-white tracking-tight">TimeWise AI</h1>
         <p className="text-md text-gray-400">Your AI-Powered Time Management Assistant</p>
+        <nav className="mt-6 flex justify-center border-b border-gray-700">
+            <button
+                onClick={() => onTabChange('tracker')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'tracker' ? 'border-b-2 border-blue-500 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+                Time Tracker
+            </button>
+            <button
+                onClick={() => onTabChange('pomodoro')}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'pomodoro' ? 'border-b-2 border-blue-500 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+                Pomodoro Timer
+            </button>
+        </nav>
     </header>
 );
 
@@ -148,15 +165,13 @@ const AiInsights: React.FC<AiInsightsProps> = ({ analysis, isLoading, error, onG
     </Card>
 );
 
-
-export default function App() {
-    const [categories] = useState<TimeCategory[]>(DEFAULT_CATEGORIES);
+const TrackerView: React.FC = () => {
+     const [categories] = useState<TimeCategory[]>(DEFAULT_CATEGORIES);
     const [timeEntries, setTimeEntries] = useState<TimeEntry[]>(() => {
         try {
             const savedEntries = localStorage.getItem('timeWiseAiEntries');
             if (savedEntries) {
                 const parsedEntries = JSON.parse(savedEntries);
-                // Ensure we have an array before setting state
                 if (Array.isArray(parsedEntries)) {
                     return parsedEntries;
                 }
@@ -164,7 +179,7 @@ export default function App() {
         } catch (error) {
             console.error("Error reading time entries from localStorage", error);
         }
-        return MOCK_TIME_ENTRIES; // Fallback for first-time users or if storage is corrupted
+        return MOCK_TIME_ENTRIES;
     });
     const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null);
     const [isLoadingAI, setIsLoadingAI] = useState<boolean>(false);
@@ -217,24 +232,38 @@ export default function App() {
     }, [timeEntries, categories]);
 
     return (
+        <main className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+            <div className="lg:col-span-2 space-y-6">
+                <TimeEntryForm categories={categories} onAddEntry={handleAddEntry} />
+                <TimeLog entries={timeEntries} categories={categories} onDeleteEntry={handleDeleteEntry} />
+            </div>
+            <div className="lg:col-span-3 space-y-6">
+                <Card>
+                    <CardHeader>
+                        <PieChartIcon className="w-6 h-6 text-green-400" />
+                        <CardTitle>Time Distribution</CardTitle>
+                    </CardHeader>
+                    <TimeDistributionChart data={chartData} />
+                </Card>
+                <AiInsights analysis={aiAnalysis} isLoading={isLoadingAI} error={aiError} onGetAnalysis={handleGetAIAnalysis} />
+            </div>
+        </main>
+    );
+}
+
+export default function App() {
+    const [activeTab, setActiveTab] = useState<ActiveTab>('tracker');
+    
+    return (
         <div className="min-h-screen bg-gray-900 bg-grid-gray-700/[0.2]">
-            <Header />
-            <main className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-                <div className="lg:col-span-2 space-y-6">
-                    <TimeEntryForm categories={categories} onAddEntry={handleAddEntry} />
-                    <TimeLog entries={timeEntries} categories={categories} onDeleteEntry={handleDeleteEntry} />
-                </div>
-                <div className="lg:col-span-3 space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <PieChartIcon className="w-6 h-6 text-green-400" />
-                            <CardTitle>Time Distribution</CardTitle>
-                        </CardHeader>
-                        <TimeDistributionChart data={chartData} />
-                    </Card>
-                    <AiInsights analysis={aiAnalysis} isLoading={isLoadingAI} error={aiError} onGetAnalysis={handleGetAIAnalysis} />
-                </div>
-            </main>
+            <Header activeTab={activeTab} onTabChange={setActiveTab} />
+            {activeTab === 'tracker' ? (
+                <TrackerView />
+            ) : (
+                <main className="container mx-auto px-4 py-8">
+                    <PomodoroTimer />
+                </main>
+            )}
         </div>
     );
 }
