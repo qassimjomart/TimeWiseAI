@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
@@ -20,15 +19,30 @@ export const PomodoroTimer: React.FC = () => {
     const [mode, setMode] = useState<TimerMode>('pomodoro');
     const [timeLeft, setTimeLeft] = useState(POMODORO_TIME);
     const [isActive, setIsActive] = useState(false);
-    const [pomodorosCompleted, setPomodorosCompleted] = useState(0);
+    const [pomodorosCompleted, setPomodorosCompleted] = useState(() => {
+        try {
+            const saved = localStorage.getItem('pomodorosCompleted');
+            return saved ? parseInt(saved, 10) : 0;
+        } catch {
+            return 0;
+        }
+    });
 
     const alarmSound = useRef<HTMLAudioElement | null>(null);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('pomodorosCompleted', pomodorosCompleted.toString());
+        } catch (error) {
+            console.error("Error saving pomodoros count to localStorage", error);
+        }
+    }, [pomodorosCompleted]);
 
     const switchMode = useCallback(() => {
         if (mode === 'pomodoro') {
             const newCompleted = pomodorosCompleted + 1;
             setPomodorosCompleted(newCompleted);
-            if (newCompleted % 4 === 0) {
+            if (newCompleted > 0 && newCompleted % 4 === 0) {
                 setMode('longBreak');
                 setTimeLeft(LONG_BREAK_TIME);
             } else {
@@ -49,7 +63,7 @@ export const PomodoroTimer: React.FC = () => {
             interval = window.setInterval(() => {
                 setTimeLeft(prev => prev - 1);
             }, 1000);
-        } else if (timeLeft === 0) {
+        } else if (timeLeft === 0 && isActive) {
             alarmSound.current?.play();
             switchMode();
         }
@@ -60,7 +74,8 @@ export const PomodoroTimer: React.FC = () => {
     }, [isActive, timeLeft, switchMode]);
 
     useEffect(() => {
-        document.title = `${formatTime(timeLeft)} - ${mode === 'pomodoro' ? 'Work' : 'Break'} | TimeWise AI`;
+        const modeText = mode === 'shortBreak' ? 'Short Break' : mode === 'longBreak' ? 'Long Break' : 'Pomodoro';
+        document.title = `${formatTime(timeLeft)} - ${modeText} | TimeWise AI`;
     }, [timeLeft, mode]);
 
     const handleToggle = () => {
@@ -75,29 +90,47 @@ export const PomodoroTimer: React.FC = () => {
             case 'longBreak': setTimeLeft(LONG_BREAK_TIME); break;
         }
     };
-
-    const getModeName = (m: TimerMode) => {
-        if (m === 'pomodoro') return 'Pomodoro';
-        if (m === 'shortBreak') return 'Short Break';
-        return 'Long Break';
-    }
+    
+    const selectMode = (newMode: TimerMode) => {
+        setIsActive(false);
+        setMode(newMode);
+        switch (newMode) {
+            case 'pomodoro': setTimeLeft(POMODORO_TIME); break;
+            case 'shortBreak': setTimeLeft(SHORT_BREAK_TIME); break;
+            case 'longBreak': setTimeLeft(LONG_BREAK_TIME); break;
+        }
+    };
 
     return (
         <Card className="max-w-md mx-auto">
             <audio ref={alarmSound} src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
             <CardHeader className="justify-center">
-                <CardTitle>{getModeName(mode)}</CardTitle>
+                <CardTitle>Pomodoro Timer</CardTitle>
             </CardHeader>
+            <div className="px-6">
+                <div className="flex justify-center items-center space-x-1 bg-gray-900/50 p-1 rounded-lg">
+                    <button onClick={() => selectMode('pomodoro')} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${mode === 'pomodoro' ? 'bg-red-500 text-white' : 'text-gray-400 hover:bg-gray-700'}`}>
+                        Pomodoro
+                    </button>
+                    <button onClick={() => selectMode('shortBreak')} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${mode === 'shortBreak' ? 'bg-green-500 text-white' : 'text-gray-400 hover:bg-gray-700'}`}>
+                        Short Break
+                    </button>
+                    <button onClick={() => selectMode('longBreak')} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${mode === 'longBreak' ? 'bg-blue-500 text-white' : 'text-gray-400 hover:bg-gray-700'}`}>
+                        Long Break
+                    </button>
+                </div>
+            </div>
             <div className="flex flex-col items-center justify-center space-y-6 py-8">
                 <div className="text-8xl font-bold tracking-tighter text-white">
                     {formatTime(timeLeft)}
                 </div>
                 <div className="flex items-center space-x-4">
-                    <Button onClick={handleToggle} className="w-32 justify-center !text-lg" style={{backgroundColor: isActive ? '#f97316' : '#2563eb', hover: {backgroundColor: isActive ? '#ea580c' : '#1d4ed8' }}}>
+                    <Button onClick={handleToggle} className={`w-32 justify-center !text-lg ${isActive ? 'bg-orange-500 hover:bg-orange-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
                         {isActive ? <PauseIcon className="w-6 h-6 mr-2" /> : <PlayIcon className="w-6 h-6 mr-2" />}
                         {isActive ? 'Pause' : 'Start'}
                     </Button>
-                    <Button onClick={handleReset} variant="outline" className="w-32 justify-center !text-lg bg-gray-600 hover:bg-gray-700">
+                    {/* FIX: Removed unsupported `variant` prop. The styling is handled by className. */}
+                    <Button onClick={handleReset} className="w-32 justify-center !text-lg bg-gray-600 hover:bg-gray-700">
                         <RefreshCwIcon className="w-6 h-6 mr-2"/>
                         Reset
                     </Button>
