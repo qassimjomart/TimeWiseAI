@@ -72,11 +72,11 @@ const TimeEntryForm: React.FC<TimeEntryFormProps> = ({ categories, onAddEntry })
                 </div>
                 <div>
                     <label htmlFor="duration" className="block text-sm font-medium text-gray-300">Duration (minutes)</label>
-                    <input type="number" id="duration" value={duration} onChange={(e) => setDuration(e.target.value)} className="mt-1 block w-full text-base bg-gray-700 border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md text-white" placeholder="e.g., 60"/>
+                    <input type="number" id="duration" value={duration} onChange={(e) => setDuration(e.target.value)} className="mt-1 block w-full px-3 py-2 text-base bg-gray-700 border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md text-white" placeholder="e.g., 45"/>
                 </div>
                 <div>
                     <label htmlFor="description" className="block text-sm font-medium text-gray-300">Description (optional)</label>
-                    <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="mt-1 block w-full text-base bg-gray-700 border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md text-white" placeholder="What did you work on?"></textarea>
+                    <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="mt-1 block w-full px-3 py-2 text-base bg-gray-700 border-gray-600 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md text-white" placeholder="e.g., Finalizing Q3 report"></textarea>
                 </div>
                 <Button type="submit" className="w-full justify-center">
                     <PlusIcon className="w-5 h-5 mr-2" /> Add Entry
